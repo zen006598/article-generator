@@ -1,0 +1,136 @@
+### 多考試類型文章生成器 API 測試
+### Base URL: http://localhost:8000
+
+###############################################################################
+# 基本文章生成 API
+###############################################################################
+
+### 1. 生成 TOEIC 文章
+POST {{baseUrl}}/api/v1/generate
+Content-Type: application/json
+
+{
+  "exam_type": "TOEIC",
+  "topic": "Business Meetings",
+  "difficulty": "Intermediate",
+  "word_count": 200,
+  "paragraph_count": 3
+}
+
+### 2. 生成 GRE 文章
+POST {{baseUrl}}/api/v1/generate
+Content-Type: application/json
+
+{
+  "exam_type": "GRE",
+  "topic": "Philosophy",
+  "difficulty": "160",
+  "word_count": 300,
+  "paragraph_count": 4,
+  "style": "academic"
+}
+
+### 3. 生成 IELTS 文章
+POST {{baseUrl}}/api/v1/generate?provider=gemini
+Content-Type: application/json
+
+{
+  "exam_type": "IELTS",
+  "topic": "Environment and Technology",
+  "difficulty": "Band 7",
+  "word_count": 250,
+  "paragraph_count": 3,
+  "style": "report"
+}
+
+### 4. 生成 SAT 文章
+POST {{baseUrl}}/api/v1/generate
+Content-Type: application/json
+
+{
+  "exam_type": "SAT",
+  "topic": "U.S. History",
+  "difficulty": "1400",
+  "word_count": 400,
+  "paragraph_count": 5,
+  "style": "analytical"
+}
+
+### 5. 生成文章（最小參數）
+POST {{baseUrl}}/api/v1/generate
+Content-Type: application/json
+
+{
+  "exam_type": "TOEIC",
+  "topic": "Office Work",
+  "difficulty": "Beginner"
+}
+
+###############################################################################
+# 系統資訊 API
+###############################################################################
+
+### 6. 獲取可用的 LLM 提供商
+GET {{baseUrl}}/api/v1/providers
+
+### 7. 獲取所有支援的考試類型
+GET {{baseUrl}}/api/v1/exam-types
+
+### 8. 獲取 TOEIC 考試詳細資訊
+GET {{baseUrl}}/api/v1/exam-types/TOEIC
+
+### 9. 獲取可用的模板配置
+GET {{baseUrl}}/api/v1/templates
+
+###############################################################################
+# 錯誤測試案例
+###############################################################################
+
+### 10. 測試無效的考試類型
+POST {{baseUrl}}/api/v1/generate
+Content-Type: application/json
+
+{
+  "exam_type": "INVALID_EXAM",
+  "topic": "Test Topic",
+  "difficulty": "Intermediate"
+}
+
+### 11. 測試無效的難度分數
+POST {{baseUrl}}/api/v1/generate
+Content-Type: application/json
+
+{
+  "exam_type": "TOEIC",
+  "topic": "Business Meetings",
+  "difficulty": "InvalidLevel"
+}
+
+### 12. 測試無效的字數
+POST {{baseUrl}}/api/v1/generate
+Content-Type: application/json
+
+{
+  "exam_type": "TOEIC",
+  "topic": "Business Meetings",
+  "difficulty": "Intermediate",
+  "word_count": 2000
+}
+
+###############################################################################
+# 變數設定
+###############################################################################
+
+@baseUrl = http://localhost:8000
+
+###############################################################################
+# 使用說明
+###############################################################################
+
+# 1. 確保服務器在 http://localhost:8000 運行
+# 2. 使用 VS Code REST Client 擴展執行請求
+# 3. 支援的考試類型: TOEIC, GRE, IELTS, SAT
+# 4. TOEIC 難度等級: Beginner, Intermediate, Upper-Intermediate, Advanced
+# 5. GRE 難度等級: 130, 140, 150, 160, 170
+# 6. IELTS 難度等級: Band 5, Band 6, Band 7, Band 8, Band 9
+# 7. SAT 難度等級: 400, 600, 800, 1000, 1200, 1400, 1600

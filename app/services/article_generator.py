@@ -33,14 +33,15 @@ class ArticleGenerator:
         """生成文章的主要方法"""
         
         try:
-            logger.info(f"開始生成文章 - 考試類型: {exam_type}, 主題: {topic}, 難度: {difficulty}, 提供商: {provider}")
-            
             # 1. 驗證所有參數
             self._validate_parameters(exam_type, topic, difficulty, word_count, paragraph_count, style)
             
             # 2. 處理預設值
             final_word_count = self._process_word_count(exam_type, difficulty, word_count)
             final_paragraph_count = paragraph_count or 3
+            final_provider = provider or self.llm_service.default_provider
+            
+            logger.info(f"開始生成文章 - 考試類型: {exam_type}, 主題: {topic}, 難度: {difficulty}, 提供商: {final_provider}")
             
             # 3. 使用 LLM 服務的高級介面
             response = await self.llm_service.generate_article(
@@ -51,7 +52,7 @@ class ArticleGenerator:
                 paragraph_count=final_paragraph_count,
                 style=style,
                 focus_points=focus_points,
-                provider=provider
+                provider=final_provider
             )
             
             # 4. 構建回應元數據

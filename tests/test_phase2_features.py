@@ -99,7 +99,7 @@ class TestPhase2Features:
         assert all(topic in data["common_topics"] for topic in expected_topics)
         
         # 驗證 GRE 難度等級
-        expected_difficulties = ["130分", "140分", "150分", "160分", "170分"]
+        expected_difficulties = ["130", "140", "150", "160", "170"]
         assert all(diff in data["supported_difficulties"] for diff in expected_difficulties)
     
     def test_sat_specific_config(self, client):
@@ -118,7 +118,7 @@ class TestPhase2Features:
         assert all(topic in data["common_topics"] for topic in expected_topics)
         
         # 驗證 SAT 難度等級
-        expected_difficulties = ["400分", "600分", "800分", "1000分", "1200分", "1400分", "1600分"]
+        expected_difficulties = ["400", "600", "800", "1000", "1200", "1400", "1600"]
         assert all(diff in data["supported_difficulties"] for diff in expected_difficulties)
     
     def test_invalid_exam_type(self, client):
@@ -137,10 +137,10 @@ class TestArticleGeneration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings", 
-            "difficulty": "中級",
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3,
-            "style": "正式商業"
+            "style": "formal"
         }
         
         response = client.post("/api/v1/generate", json=request_data)
@@ -152,10 +152,10 @@ class TestArticleGeneration:
         request_data = {
             "exam_type": "GRE",
             "topic": "Philosophy",
-            "difficulty": "150分",
+            "difficulty": "150",
             "word_count": 300,
             "paragraph_count": 4,
-            "style": "學術分析"
+            "style": "academic"
         }
         
         response = client.post("/api/v1/generate", json=request_data)
@@ -167,7 +167,7 @@ class TestArticleGeneration:
         request_data = {
             "exam_type": "INVALID",
             "topic": "Test Topic",
-            "difficulty": "中級"
+            "difficulty": "Intermediate"
         }
         
         response = client.post("/api/v1/generate", json=request_data)
@@ -178,7 +178,7 @@ class TestArticleGeneration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": "中級",
+            "difficulty": "Intermediate",
             "paragraph_count": 15  # 超出範圍
         }
         

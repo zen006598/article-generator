@@ -5,16 +5,16 @@
       "full_name": "Test of English for International Communication",
       "description": "國際英語溝通測驗",
       "supported_difficulties": [
-        "初級",
-        "中級",
-        "中高級",
-        "高級"
+        "Beginner",
+        "Intermediate",
+        "Upper-Intermediate",
+        "Advanced"
       ],
       "default_word_count": {
-        "初級": 150,
-        "中級": 200,
-        "中高級": 250,
-        "高級": 300
+        "Beginner": 150,
+        "Intermediate": 200,
+        "Upper-Intermediate": 250,
+        "Advanced": 300
       },
       "common_topics": [
         "Business Correspondence",
@@ -25,11 +25,11 @@
         "Daily Life"
       ],
       "writing_styles": [
-        "正式商業",
-        "非正式友善",
-        "說明文",
-        "議論文",
-        "敘述文"
+        "formal",
+        "informal",
+        "explanatory",
+        "argumentative",
+        "narrative"
       ],
       "validation_rules": {
         "topic_min_length": 2,
@@ -48,18 +48,18 @@
       "full_name": "Graduate Record Examinations",
       "description": "研究生入學考試",
       "supported_difficulties": [
-        "130分",
-        "140分",
-        "150分",
-        "160分",
-        "170分"
+        "130",
+        "140",
+        "150",
+        "160",
+        "170"
       ],
       "default_word_count": {
-        "130分": 300,
-        "140分": 350,
-        "150分": 400,
-        "160分": 450,
-        "170分": 500
+        "130": 300,
+        "140": 350,
+        "150": 400,
+        "160": 450,
+        "170": 500
       },
       "common_topics": [
         "Philosophy",
@@ -72,11 +72,11 @@
         "Art"
       ],
       "writing_styles": [
-        "學術分析",
-        "批判思考",
-        "論證評估",
-        "概念比較",
-        "理論探討"
+        "academic",
+        "critical",
+        "argumentative",
+        "comparative",
+        "theoretical"
       ],
       "validation_rules": {
         "topic_min_length": 2,
@@ -118,11 +118,11 @@
         "Health and Medicine"
       ],
       "writing_styles": [
-        "學術寫作",
-        "議論文",
-        "報告文",
-        "圖表描述",
-        "問題解決"
+        "academic",
+        "argumentative",
+        "report",
+        "descriptive",
+        "problem-solving"
       ],
       "validation_rules": {
         "topic_min_length": 2,
@@ -141,22 +141,22 @@
       "full_name": "Scholastic Assessment Test",
       "description": "學術能力評估測試",
       "supported_difficulties": [
-        "400分",
-        "600分",
-        "800分",
-        "1000分",
-        "1200分",
-        "1400分",
-        "1600分"
+        "400",
+        "600",
+        "800",
+        "1000",
+        "1200",
+        "1400",
+        "1600"
       ],
       "default_word_count": {
-        "400分": 200,
-        "600分": 250,
-        "800分": 300,
-        "1000分": 350,
-        "1200分": 400,
-        "1400分": 450,
-        "1600分": 500
+        "400": 200,
+        "600": 250,
+        "800": 300,
+        "1000": 350,
+        "1200": 400,
+        "1400": 450,
+        "1600": 500
       },
       "common_topics": [
         "U.S. History",
@@ -167,11 +167,11 @@
         "Writing and Analysis"
       ],
       "writing_styles": [
-        "分析寫作",
-        "證據論述",
-        "批判閱讀",
-        "邏輯推理",
-        "學術討論"
+        "analytical",
+        "evidence-based",
+        "critical",
+        "logical",
+        "academic"
       ],
       "validation_rules": {
         "topic_min_length": 2,

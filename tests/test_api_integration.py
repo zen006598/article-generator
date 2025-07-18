@@ -63,7 +63,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3
         }
@@ -80,7 +80,7 @@ class TestAPIIntegration:
                 "provider": "openai",
                 "exam_type": "TOEIC",
                 "topic": "Business Meetings",
-                "difficulty": 500,
+                "difficulty": "Intermediate",
                 "target_word_count": 200,
                 "paragraph_count": 3,
                 "actual_word_count": 10
@@ -91,17 +91,17 @@ class TestAPIIntegration:
             assert response.status_code == 200
             data = response.json()
             assert data["success"] == True
-            assert "data" in data
-            assert data["data"]["content"] == "This is a test article about business meetings."
-            assert data["data"]["exam_type"] == "TOEIC"
-            assert data["data"]["topic"] == "Business Meetings"
+            assert "article" in data
+            assert data["article"] == "This is a test article about business meetings."
+            assert data["metadata"]["exam_type"] == "TOEIC"
+            assert data["metadata"]["topic"] == "Business Meetings"
     
     def test_generate_article_invalid_exam_type(self, client):
         """測試無效考試類型"""
         request_data = {
             "exam_type": "INVALID",
             "topic": "Test Topic",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3
         }
@@ -132,7 +132,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 2000,  # 超過最大值
             "paragraph_count": 3
         }
@@ -149,7 +149,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 15  # 超過最大值
         }
@@ -166,7 +166,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3
         }
@@ -186,7 +186,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3
         }
@@ -206,7 +206,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3
         }
@@ -226,7 +226,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3,
             "provider": "gemini"
@@ -244,7 +244,7 @@ class TestAPIIntegration:
                 "provider": "gemini",
                 "exam_type": "TOEIC",
                 "topic": "Business Meetings",
-                "difficulty": 500,
+                "difficulty": "Intermediate",
                 "target_word_count": 200,
                 "paragraph_count": 3,
                 "actual_word_count": 10
@@ -255,14 +255,14 @@ class TestAPIIntegration:
             assert response.status_code == 200
             data = response.json()
             assert data["success"] == True
-            assert data["data"]["provider"] == "gemini"
+            assert data["metadata"]["provider"] == "gemini"
     
     def test_generate_article_with_style(self, client, mock_llm_service_success):
         """測試指定風格生成文章"""
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3,
             "style": "formal"
@@ -280,7 +280,7 @@ class TestAPIIntegration:
                 "provider": "openai",
                 "exam_type": "TOEIC",
                 "topic": "Business Meetings",
-                "difficulty": 500,
+                "difficulty": "Intermediate",
                 "target_word_count": 200,
                 "paragraph_count": 3,
                 "actual_word_count": 8
@@ -291,14 +291,14 @@ class TestAPIIntegration:
             assert response.status_code == 200
             data = response.json()
             assert data["success"] == True
-            assert data["data"]["content"] == "This is a formal business article."
+            assert data["article"] == "This is a formal business article."
     
     def test_generate_article_with_focus_points(self, client, mock_llm_service_success):
         """測試包含重點的文章生成"""
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3,
             "focus_points": ["agenda", "teamwork", "decision making"]
@@ -316,7 +316,7 @@ class TestAPIIntegration:
                 "provider": "openai",
                 "exam_type": "TOEIC",
                 "topic": "Business Meetings",
-                "difficulty": 500,
+                "difficulty": "Intermediate",
                 "target_word_count": 200,
                 "paragraph_count": 3,
                 "actual_word_count": 12
@@ -350,7 +350,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "Business Meetings",
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3
         }
@@ -363,7 +363,7 @@ class TestAPIIntegration:
                 "provider": "openai",
                 "exam_type": "TOEIC",
                 "topic": "Business Meetings",
-                "difficulty": 500,
+                "difficulty": "Intermediate",
                 "target_word_count": 200,
                 "paragraph_count": 3,
                 "actual_word_count": 2
@@ -376,19 +376,19 @@ class TestAPIIntegration:
             
             # 檢查必要欄位
             assert "success" in data
-            assert "data" in data
-            assert "message" in data
+            assert "article" in data
+            assert "metadata" in data
             
             # 檢查數據結構
-            article_data = data["data"]
+            metadata = data["metadata"]
             required_fields = [
-                "content", "exam_type", "topic", "difficulty", 
+                "exam_type", "topic", "difficulty", 
                 "target_word_count", "paragraph_count", "actual_word_count",
                 "usage", "model", "provider"
             ]
             
             for field in required_fields:
-                assert field in article_data
+                assert field in metadata
     
     def test_large_request_handling(self, client):
         """測試大型請求處理"""
@@ -396,7 +396,7 @@ class TestAPIIntegration:
         request_data = {
             "exam_type": "TOEIC",
             "topic": "A" * 1000,  # 超長主題
-            "difficulty": 500,
+            "difficulty": "Intermediate",
             "word_count": 200,
             "paragraph_count": 3
         }
