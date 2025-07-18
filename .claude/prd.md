@@ -5,7 +5,6 @@
 
 ## 技術架構
 - **後端框架**: FastAPI
-- **工作流引擎**: PocketFlow
 - **AI 服務**: 
   - OpenAI GPT API (gpt-3.5-turbo, gpt-4, gpt-4-turbo)
   - Google Gemini API (gemini-1.5-pro, gemini-1.5-flash, gemini-1.0-pro) - 透過 OpenAI SDK 統一調用
@@ -268,12 +267,6 @@ exam_specific_requirements:
 - 效能優化
 - 監控與日誌系統
 
-### Phase 4: 擴展功能 (Week 7-8)
-- 快取機制
-- 批量生成功能
-- 使用統計分析
-- 文檔與部署
-
 ## 測試需求
 
 ### 單元測試
@@ -281,16 +274,6 @@ exam_specific_requirements:
 - 參數驗證邏輯
 - 錯誤處理機制
 - 覆蓋率 > 85%
-
-### 整合測試
-- OpenAI API 整合
-- 完整 API 流程
-- 不同參數組合測試
-
-### 效能測試
-- 並發請求測試
-- 長文章生成效能
-- 記憶體使用監控
 
 ## 部署配置
 
