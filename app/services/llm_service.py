@@ -28,7 +28,7 @@ class LLMProvider:
 class OpenAIProvider(LLMProvider):
     """OpenAI 提供商"""
     
-    def __init__(self, api_key: str, model: str = "gpt-3.5-turbo"):
+    def __init__(self, api_key: str, model: str = "gpt-4o-mini-2024-07-18"):
         self.client = AsyncOpenAI(api_key=api_key)
         self.model = model
     
@@ -67,7 +67,7 @@ class OpenAIProvider(LLMProvider):
 class GeminiProvider(LLMProvider):
     """Gemini 提供商（透過 OpenAI SDK 調用）"""
     
-    def __init__(self, api_key: str, model: str = "gemini-1.5-pro"):
+    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
         # 使用 OpenAI SDK 調用 Gemini
         self.client = AsyncOpenAI(
             api_key=api_key,
@@ -136,7 +136,7 @@ class LLMService:
             logger.info("Gemini 提供商初始化成功")
         
         if not providers:
-            raise ConfigurationError("沒有可用的 LLM 提供商，請檢查 API 金鑰配置")
+            logger.warning("沒有可用的 LLM 提供商，請檢查 API 金鑰配置")
         
         return providers
     
@@ -150,6 +150,10 @@ class LLMService:
     ) -> Dict[str, Any]:
         """生成文本補全"""
         try:
+            # 檢查是否有可用的提供商
+            if not self.providers:
+                raise LLMServiceError("沒有可用的 LLM 提供商，請檢查 API 金鑰配置")
+            
             # 選擇提供商
             provider_name = provider or self.default_provider
             if provider_name not in self.providers:
