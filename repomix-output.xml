@@ -1,0 +1,2293 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.claude/CLAUDE.md
+.claude/prd.md
+.claude/task.md
+.env.example
+.gitignore
+.python-version
+app/__init__.py
+app/api/__init__.py
+app/api/routes/__init__.py
+app/api/routes/generate.py
+app/core/__init__.py
+app/core/config.py
+app/core/exceptions.py
+app/models/__init__.py
+app/models/request.py
+app/models/response.py
+app/services/__init__.py
+app/services/article_generator.py
+app/services/llm_service.py
+app/utils/__init__.py
+app/utils/validators.py
+configs/exam_configs.json
+main.py
+pyproject.toml
+templates/prompt_templates.py
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".env.example">
+# OpenAI API 設定
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-3.5-turbo
+
+# 應用程式設定
+APP_NAME=ArticleGenerator
+APP_VERSION=0.1.0
+DEBUG=true
+LOG_LEVEL=INFO
+
+# API 設定
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# 文章生成設定
+MAX_ARTICLE_LENGTH=2000
+DEFAULT_LANGUAGE=zh-TW
+GENERATION_TIMEOUT=30
+</file>
+
+<file path="app/__init__.py">
+"""
+多考試類型文章生成器應用程式
+
+支援 TOEIC、IELTS、托福等考試類型的文章生成
+"""
+
+__version__ = "0.1.0"
+</file>
+
+<file path="app/api/__init__.py">
+"""API 路由模組"""
+</file>
+
+<file path="app/api/routes/__init__.py">
+"""API 路由端點"""
+</file>
+
+<file path="app/api/routes/generate.py">
+"""文章生成 API 端點"""
+
+import logging
+from typing import Dict, Any
+
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import JSONResponse
+
+from app.models.request import ArticleGenerationRequest
+from app.models.response import (
+    ArticleGenerationResponse,
+    ErrorResponse,
+    ExamTypesResponse,
+    ExamInfoResponse
+)
+from app.services.article_generator import article_generator
+from app.core.exceptions import (
+    ArticleGeneratorException,
+    ValidationError,
+    ExamTypeNotSupportedError
+)
+
+logger = logging.getLogger(__name__)
+
+# 創建路由器
+router = APIRouter()
+
+
+@router.post(
+    "/generate",
+    response_model=ArticleGenerationResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        500: {"model": ErrorResponse}
+    },
+    summary="生成文章",
+    description="根據指定的考試類型、主題和難度生成文章"
+)
+async def generate_article(request: ArticleGenerationRequest) -> ArticleGenerationResponse:
+    """
+    生成文章的主要 API 端點
+    
+    Args:
+        request: 文章生成請求
+        
+    Returns:
+        ArticleGenerationResponse: 包含生成文章的回應
+        
+    Raises:
+        HTTPException: 當參數驗證失敗或生成過程出錯時
+    """
+    try:
+        logger.info(f"收到文章生成請求: {request.exam_type} - {request.topic}")
+        
+        # 調用文章生成服務
+        result = await article_generator.generate_article(
+            exam_type=request.exam_type,
+            topic=request.topic,
+            difficulty=request.difficulty,
+            word_count=request.word_count,
+            style=request.style,
+            focus_points=request.focus_points
+        )
+        
+        return ArticleGenerationResponse(**result)
+        
+    except ValidationError as e:
+        logger.warning(f"參數驗證失敗: {e.message}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "參數驗證錯誤",
+                "message": e.message,
+                "details": e.details
+            }
+        )
+    
+    except ExamTypeNotSupportedError as e:
+        logger.warning(f"不支援的考試類型: {e.message}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "不支援的考試類型",
+                "message": e.message,
+                "details": e.details
+            }
+        )
+    
+    except ArticleGeneratorException as e:
+        logger.error(f"文章生成錯誤: {e.message}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "文章生成失敗",
+                "message": e.message,
+                "details": e.details
+            }
+        )
+    
+    except Exception as e:
+        logger.error(f"未預期的錯誤: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "伺服器內部錯誤",
+                "message": "發生未預期的錯誤，請稍後再試"
+            }
+        )
+
+
+@router.get(
+    "/exam-types",
+    response_model=ExamTypesResponse,
+    summary="獲取支援的考試類型",
+    description="返回所有支援的考試類型列表"
+)
+async def get_exam_types() -> ExamTypesResponse:
+    """
+    獲取所有支援的考試類型
+    
+    Returns:
+        ExamTypesResponse: 包含考試類型列表的回應
+    """
+    try:
+        exam_types = article_generator.get_supported_exam_types()
+        return ExamTypesResponse(exam_types=exam_types)
+    
+    except Exception as e:
+        logger.error(f"獲取考試類型列表失敗: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "伺服器內部錯誤",
+                "message": "無法獲取考試類型列表"
+            }
+        )
+
+
+@router.get(
+    "/exam-types/{exam_type}",
+    response_model=ExamInfoResponse,
+    responses={
+        400: {"model": ErrorResponse}
+    },
+    summary="獲取考試類型詳細資訊",
+    description="返回指定考試類型的詳細資訊"
+)
+async def get_exam_info(exam_type: str) -> ExamInfoResponse:
+    """
+    獲取指定考試類型的詳細資訊
+    
+    Args:
+        exam_type: 考試類型名稱
+        
+    Returns:
+        ExamInfoResponse: 包含考試詳細資訊的回應
+        
+    Raises:
+        HTTPException: 當考試類型不存在時
+    """
+    try:
+        exam_type = exam_type.upper().strip()
+        exam_info = article_generator.get_exam_info(exam_type)
+        
+        return ExamInfoResponse(
+            exam_type=exam_info["name"],
+            full_name=exam_info["full_name"],
+            description=exam_info["description"],
+            supported_difficulties=exam_info["supported_difficulties"],
+            writing_styles=exam_info["writing_styles"],
+            common_topics=exam_info["common_topics"]
+        )
+    
+    except ExamTypeNotSupportedError as e:
+        logger.warning(f"查詢不存在的考試類型: {exam_type}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "不支援的考試類型",
+                "message": e.message,
+                "details": e.details
+            }
+        )
+    
+    except Exception as e:
+        logger.error(f"獲取考試資訊失敗: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "伺服器內部錯誤",
+                "message": "無法獲取考試資訊"
+            }
+        )
+
+
+@router.get(
+    "/health",
+    summary="健康檢查",
+    description="檢查文章生成服務的健康狀態"
+)
+async def health_check() -> Dict[str, Any]:
+    """
+    健康檢查端點
+    
+    Returns:
+        Dict: 包含服務狀態的回應
+    """
+    return {
+        "status": "healthy",
+        "service": "文章生成服務",
+        "supported_exam_types": article_generator.get_supported_exam_types()
+    }
+</file>
+
+<file path="app/core/__init__.py">
+"""核心配置和異常處理模組"""
+</file>
+
+<file path="app/core/config.py">
+"""應用程式配置管理"""
+
+from typing import Optional
+from pydantic import Field
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    """應用程式設定類"""
+    
+    # OpenAI API 設定
+    openai_api_key: str = Field(..., description="OpenAI API 金鑰")
+    openai_model: str = Field(default="gpt-3.5-turbo", description="使用的 OpenAI 模型")
+    
+    # 應用程式設定
+    app_name: str = Field(default="ArticleGenerator", description="應用程式名稱")
+    app_version: str = Field(default="0.1.0", description="應用程式版本")
+    debug: bool = Field(default=False, description="是否為除錯模式")
+    log_level: str = Field(default="INFO", description="日誌級別")
+    
+    # API 設定
+    api_host: str = Field(default="0.0.0.0", description="API 主機位址")
+    api_port: int = Field(default=8000, description="API 端口")
+    
+    # 文章生成設定
+    max_article_length: int = Field(default=2000, description="文章最大長度")
+    default_language: str = Field(default="zh-TW", description="預設語言")
+    generation_timeout: int = Field(default=30, description="生成超時時間（秒）")
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = False
+
+
+# 全域設定實例
+settings = Settings()
+</file>
+
+<file path="app/core/exceptions.py">
+"""自定義異常類定義"""
+
+from typing import Any, Dict, Optional
+
+
+class ArticleGeneratorException(Exception):
+    """基礎異常類"""
+    
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        self.message = message
+        self.details = details or {}
+        super().__init__(self.message)
+
+
+class ConfigurationError(ArticleGeneratorException):
+    """配置錯誤異常"""
+    pass
+
+
+class LLMServiceError(ArticleGeneratorException):
+    """LLM 服務異常"""
+    pass
+
+
+class ValidationError(ArticleGeneratorException):
+    """驗證錯誤異常"""
+    pass
+
+
+class ExamTypeNotSupportedError(ArticleGeneratorException):
+    """不支援的考試類型異常"""
+    pass
+
+
+class ArticleGenerationError(ArticleGeneratorException):
+    """文章生成異常"""
+    pass
+
+
+class APIError(ArticleGeneratorException):
+    """API 錯誤異常"""
+    pass
+</file>
+
+<file path="app/models/__init__.py">
+"""Pydantic 數據模型"""
+</file>
+
+<file path="app/models/request.py">
+"""請求數據模型"""
+
+from typing import List, Optional
+from pydantic import BaseModel, Field, validator
+
+
+class ArticleGenerationRequest(BaseModel):
+    """文章生成請求模型"""
+    
+    exam_type: str = Field(
+        ...,
+        description="考試類型（如：TOEIC、IELTS、TOEFL）",
+        example="TOEIC"
+    )
+    
+    topic: str = Field(
+        ...,
+        min_length=2,
+        max_length=100,
+        description="文章主題",
+        example="商業會議的重要性"
+    )
+    
+    difficulty: str = Field(
+        ...,
+        description="難度等級",
+        example="中級"
+    )
+    
+    word_count: Optional[int] = Field(
+        None,
+        ge=50,
+        le=500,
+        description="目標字數（可選，會使用預設值）",
+        example=200
+    )
+    
+    style: Optional[str] = Field(
+        None,
+        description="寫作風格（可選）",
+        example="正式商業"
+    )
+    
+    focus_points: Optional[List[str]] = Field(
+        None,
+        description="重點內容（可選）",
+        example=["團隊合作", "溝通技巧"]
+    )
+    
+    @validator("exam_type")
+    def validate_exam_type(cls, v):
+        """驗證考試類型格式"""
+        return v.upper().strip()
+    
+    @validator("topic")
+    def validate_topic(cls, v):
+        """驗證主題格式"""
+        return v.strip()
+    
+    @validator("difficulty")
+    def validate_difficulty(cls, v):
+        """驗證難度格式"""
+        return v.strip()
+    
+    @validator("style")
+    def validate_style(cls, v):
+        """驗證風格格式"""
+        if v is not None:
+            return v.strip()
+        return v
+    
+    @validator("focus_points")
+    def validate_focus_points(cls, v):
+        """驗證重點內容格式"""
+        if v is not None:
+            return [point.strip() for point in v if point.strip()]
+        return v
+</file>
+
+<file path="app/models/response.py">
+"""回應數據模型"""
+
+from typing import Any, Dict, List, Optional
+from datetime import datetime
+from pydantic import BaseModel, Field
+
+
+class ArticleGenerationResponse(BaseModel):
+    """文章生成回應模型"""
+    
+    success: bool = Field(
+        ...,
+        description="請求是否成功"
+    )
+    
+    article: Optional[str] = Field(
+        None,
+        description="生成的文章內容"
+    )
+    
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="生成元數據"
+    )
+    
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description="生成時間"
+    )
+
+
+class ErrorResponse(BaseModel):
+    """錯誤回應模型"""
+    
+    success: bool = Field(
+        default=False,
+        description="請求是否成功"
+    )
+    
+    error: str = Field(
+        ...,
+        description="錯誤類型"
+    )
+    
+    message: str = Field(
+        ...,
+        description="錯誤訊息"
+    )
+    
+    details: Optional[Dict[str, Any]] = Field(
+        None,
+        description="錯誤詳細資訊"
+    )
+    
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description="發生時間"
+    )
+
+
+class ExamTypesResponse(BaseModel):
+    """支援的考試類型回應模型"""
+    
+    exam_types: List[str] = Field(
+        ...,
+        description="支援的考試類型列表"
+    )
+
+
+class ExamInfoResponse(BaseModel):
+    """考試類型詳細資訊回應模型"""
+    
+    exam_type: str = Field(
+        ...,
+        description="考試類型"
+    )
+    
+    full_name: str = Field(
+        ...,
+        description="考試全名"
+    )
+    
+    description: str = Field(
+        ...,
+        description="考試描述"
+    )
+    
+    supported_difficulties: List[str] = Field(
+        ...,
+        description="支援的難度等級"
+    )
+    
+    writing_styles: List[str] = Field(
+        ...,
+        description="支援的寫作風格"
+    )
+    
+    common_topics: List[str] = Field(
+        ...,
+        description="常見主題"
+    )
+</file>
+
+<file path="app/services/__init__.py">
+"""業務邏輯服務模組"""
+</file>
+
+<file path="app/services/article_generator.py">
+"""核心文章生成邏輯"""
+
+import logging
+from typing import Dict, Optional, List
+from datetime import datetime
+
+from app.services.llm_service import llm_service
+from app.utils.validators import validator
+from app.core.exceptions import ArticleGenerationError, ValidationError
+from templates.prompt_templates import PromptTemplates
+
+logger = logging.getLogger(__name__)
+
+
+class ArticleGenerator:
+    """核心文章生成服務"""
+    
+    def __init__(self):
+        """初始化文章生成器"""
+        self.llm_service = llm_service
+        self.validator = validator
+        self.prompt_templates = PromptTemplates
+    
+    async def generate_article(
+        self,
+        exam_type: str,
+        topic: str,
+        difficulty: str,
+        word_count: Optional[int] = None,
+        style: Optional[str] = None,
+        focus_points: Optional[List[str]] = None
+    ) -> Dict[str, any]:
+        """生成文章的主要方法"""
+        
+        try:
+            logger.info(f"開始生成文章 - 考試類型: {exam_type}, 主題: {topic}, 難度: {difficulty}")
+            
+            # 1. 驗證所有參數
+            self._validate_parameters(exam_type, topic, difficulty, word_count, style)
+            
+            # 2. 處理字數要求
+            final_word_count = self._process_word_count(exam_type, difficulty, word_count)
+            
+            # 3. 獲取提示模板
+            templates = self._get_prompt_templates(
+                exam_type, topic, difficulty, final_word_count, style, focus_points
+            )
+            
+            # 4. 調用 LLM 服務生成文章
+            article_content = await self.llm_service.generate_completion(
+                prompt=templates["user_prompt"],
+                system_message=templates["system_message"],
+                max_tokens=final_word_count * 2,  # 給予一些緩衝空間
+                temperature=0.7
+            )
+            
+            # 5. 構建回應元數據
+            metadata = self._build_metadata(
+                exam_type, topic, difficulty, final_word_count, style, focus_points
+            )
+            
+            logger.info("文章生成成功")
+            
+            return {
+                "success": True,
+                "article": article_content,
+                "metadata": metadata,
+                "timestamp": datetime.now()
+            }
+            
+        except Exception as e:
+            logger.error(f"文章生成失敗: {str(e)}")
+            raise ArticleGenerationError(f"文章生成失敗: {str(e)}")
+    
+    def _validate_parameters(
+        self,
+        exam_type: str,
+        topic: str,
+        difficulty: str,
+        word_count: Optional[int],
+        style: Optional[str]
+    ) -> None:
+        """驗證所有輸入參數"""
+        
+        # 驗證考試類型
+        self.validator.validate_exam_type(exam_type)
+        
+        # 驗證主題
+        self.validator.validate_topic(exam_type, topic)
+        
+        # 驗證難度
+        self.validator.validate_difficulty(exam_type, difficulty)
+        
+        # 驗證字數
+        if word_count is not None:
+            self.validator.validate_word_count(exam_type, word_count)
+        
+        # 驗證風格
+        self.validator.validate_style(exam_type, style)
+    
+    def _process_word_count(
+        self,
+        exam_type: str,
+        difficulty: str,
+        word_count: Optional[int]
+    ) -> int:
+        """處理字數要求，返回最終使用的字數"""
+        
+        if word_count is not None:
+            return word_count
+        
+        # 使用預設字數
+        return self.validator.get_default_word_count(exam_type, difficulty)
+    
+    def _get_prompt_templates(
+        self,
+        exam_type: str,
+        topic: str,
+        difficulty: str,
+        word_count: int,
+        style: Optional[str],
+        focus_points: Optional[List[str]]
+    ) -> Dict[str, str]:
+        """獲取適當的提示模板"""
+        
+        return self.prompt_templates.get_template_by_exam_type(
+            exam_type=exam_type,
+            topic=topic,
+            difficulty=difficulty,
+            word_count=word_count,
+            style=style,
+            focus_points=focus_points
+        )
+    
+    def _build_metadata(
+        self,
+        exam_type: str,
+        topic: str,
+        difficulty: str,
+        word_count: int,
+        style: Optional[str],
+        focus_points: Optional[List[str]]
+    ) -> Dict[str, any]:
+        """構建回應元數據"""
+        
+        metadata = {
+            "exam_type": exam_type,
+            "topic": topic,
+            "difficulty": difficulty,
+            "target_word_count": word_count,
+            "generation_time": datetime.now().isoformat()
+        }
+        
+        if style:
+            metadata["style"] = style
+        
+        if focus_points:
+            metadata["focus_points"] = focus_points
+        
+        # 添加考試類型的基本資訊
+        exam_info = self.validator.get_exam_info(exam_type)
+        metadata["exam_info"] = {
+            "full_name": exam_info["full_name"],
+            "description": exam_info["description"]
+        }
+        
+        return metadata
+    
+    def get_supported_exam_types(self) -> List[str]:
+        """獲取支援的考試類型"""
+        return self.validator.get_supported_exam_types()
+    
+    def get_exam_info(self, exam_type: str) -> Dict[str, any]:
+        """獲取考試類型的詳細資訊"""
+        return self.validator.get_exam_info(exam_type)
+
+
+# 全域文章生成器實例
+article_generator = ArticleGenerator()
+</file>
+
+<file path="app/services/llm_service.py">
+"""LLM 統一調用服務"""
+
+import logging
+from typing import Dict, List, Optional
+import asyncio
+
+from openai import AsyncOpenAI
+from app.core.config import settings
+from app.core.exceptions import LLMServiceError, ConfigurationError
+
+logger = logging.getLogger(__name__)
+
+
+class LLMService:
+    """LLM 服務類，負責與 OpenAI API 的統一調用"""
+    
+    def __init__(self):
+        """初始化 LLM 服務"""
+        if not settings.openai_api_key or settings.openai_api_key == "your_openai_api_key_here":
+            raise ConfigurationError("OpenAI API 金鑰未正確設定")
+        
+        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.model = settings.openai_model
+        self.timeout = settings.generation_timeout
+    
+    async def generate_completion(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.7,
+        system_message: Optional[str] = None
+    ) -> str:
+        """生成文本補全"""
+        try:
+            messages = []
+            
+            if system_message:
+                messages.append({"role": "system", "content": system_message})
+            
+            messages.append({"role": "user", "content": prompt})
+            
+            logger.info(f"發送請求到 OpenAI，模型: {self.model}")
+            
+            response = await asyncio.wait_for(
+                self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    max_tokens=max_tokens or settings.max_article_length,
+                    temperature=temperature,
+                    top_p=1.0,
+                    frequency_penalty=0.0,
+                    presence_penalty=0.0
+                ),
+                timeout=self.timeout
+            )
+            
+            content = response.choices[0].message.content
+            if not content:
+                raise LLMServiceError("OpenAI API 返回空內容")
+            
+            logger.info("成功獲得 OpenAI 回應")
+            return content.strip()
+            
+        except asyncio.TimeoutError:
+            raise LLMServiceError(f"請求超時（{self.timeout}秒）")
+        except Exception as e:
+            logger.error(f"OpenAI API 調用失敗: {str(e)}")
+            raise LLMServiceError(f"OpenAI API 調用失敗: {str(e)}")
+    
+    async def generate_article(
+        self,
+        exam_type: str,
+        topic: str,
+        difficulty: str,
+        additional_requirements: Optional[Dict] = None
+    ) -> str:
+        """生成文章的高級接口"""
+        try:
+            # 構建系統消息
+            system_message = self._build_system_message(exam_type, difficulty)
+            
+            # 構建用戶提示
+            user_prompt = self._build_user_prompt(
+                exam_type, topic, difficulty, additional_requirements
+            )
+            
+            # 調用生成服務
+            article = await self.generate_completion(
+                prompt=user_prompt,
+                system_message=system_message,
+                temperature=0.7
+            )
+            
+            return article
+            
+        except Exception as e:
+            logger.error(f"文章生成失敗: {str(e)}")
+            raise LLMServiceError(f"文章生成失敗: {str(e)}")
+    
+    def _build_system_message(self, exam_type: str, difficulty: str) -> str:
+        """構建系統消息"""
+        return f"""你是一個專業的{exam_type}考試文章生成助手。請根據用戶的要求生成高質量的文章。
+
+要求：
+- 文章難度：{difficulty}
+- 語言自然流暢
+- 結構清晰完整
+- 符合{exam_type}考試標準
+- 內容積極正面
+- 字數控制在適當範圍內"""
+    
+    def _build_user_prompt(
+        self,
+        exam_type: str,
+        topic: str,
+        difficulty: str,
+        additional_requirements: Optional[Dict] = None
+    ) -> str:
+        """構建用戶提示"""
+        prompt = f"請為{exam_type}考試生成一篇關於「{topic}」的文章，難度為{difficulty}。"
+        
+        if additional_requirements:
+            if additional_requirements.get("word_count"):
+                prompt += f"\n字數要求：約{additional_requirements['word_count']}字"
+            
+            if additional_requirements.get("style"):
+                prompt += f"\n寫作風格：{additional_requirements['style']}"
+            
+            if additional_requirements.get("focus_points"):
+                points = ", ".join(additional_requirements["focus_points"])
+                prompt += f"\n重點內容：{points}"
+        
+        prompt += "\n\n請直接輸出文章內容，不需要額外的說明或標題。"
+        
+        return prompt
+
+
+# 全域 LLM 服務實例
+llm_service = LLMService()
+</file>
+
+<file path="app/utils/__init__.py">
+"""工具和驗證器模組"""
+</file>
+
+<file path="app/utils/validators.py">
+"""參數驗證工具"""
+
+import json
+import os
+from typing import Dict, List, Optional, Any
+
+from app.core.exceptions import ValidationError, ExamTypeNotSupportedError
+
+
+class ExamConfigValidator:
+    """考試配置驗證器"""
+    
+    def __init__(self):
+        """初始化驗證器，載入考試配置"""
+        self.config_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "configs",
+            "exam_configs.json"
+        )
+        self.exam_configs = self._load_exam_configs()
+    
+    def _load_exam_configs(self) -> Dict[str, Any]:
+        """載入考試配置文件"""
+        try:
+            with open(self.config_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            raise ValidationError(f"考試配置文件不存在: {self.config_path}")
+        except json.JSONDecodeError as e:
+            raise ValidationError(f"考試配置文件格式錯誤: {str(e)}")
+    
+    def validate_exam_type(self, exam_type: str) -> bool:
+        """驗證考試類型是否支援"""
+        if exam_type not in self.exam_configs["exam_types"]:
+            raise ExamTypeNotSupportedError(
+                f"不支援的考試類型: {exam_type}",
+                {"supported_types": list(self.exam_configs["exam_types"].keys())}
+            )
+        return True
+    
+    def validate_difficulty(self, exam_type: str, difficulty: str) -> bool:
+        """驗證難度等級是否有效"""
+        self.validate_exam_type(exam_type)
+        
+        config = self.exam_configs["exam_types"][exam_type]
+        supported_difficulties = config["supported_difficulties"]
+        
+        if difficulty not in supported_difficulties:
+            raise ValidationError(
+                f"{exam_type} 不支援的難度等級: {difficulty}",
+                {
+                    "exam_type": exam_type,
+                    "provided_difficulty": difficulty,
+                    "supported_difficulties": supported_difficulties
+                }
+            )
+        return True
+    
+    def validate_topic(self, exam_type: str, topic: str) -> bool:
+        """驗證主題是否有效"""
+        self.validate_exam_type(exam_type)
+        
+        config = self.exam_configs["exam_types"][exam_type]
+        validation_rules = config["validation_rules"]
+        
+        # 檢查主題長度
+        topic_length = len(topic.strip())
+        if topic_length < validation_rules["topic_min_length"]:
+            raise ValidationError(
+                f"主題太短，最少需要 {validation_rules['topic_min_length']} 個字符",
+                {"topic": topic, "length": topic_length}
+            )
+        
+        if topic_length > validation_rules["topic_max_length"]:
+            raise ValidationError(
+                f"主題太長，最多允許 {validation_rules['topic_max_length']} 個字符",
+                {"topic": topic, "length": topic_length}
+            )
+        
+        return True
+    
+    def validate_word_count(self, exam_type: str, word_count: Optional[int]) -> int:
+        """驗證並返回字數要求"""
+        self.validate_exam_type(exam_type)
+        
+        config = self.exam_configs["exam_types"][exam_type]
+        validation_rules = config["validation_rules"]
+        
+        if word_count is None:
+            # 返回預設字數（使用中級難度的預設值）
+            default_word_counts = config["default_word_count"]
+            if "中級" in default_word_counts:
+                return default_word_counts["中級"]
+            else:
+                # 如果沒有中級，取第一個值
+                return list(default_word_counts.values())[0]
+        
+        # 驗證字數範圍
+        if word_count < validation_rules["word_count_min"]:
+            raise ValidationError(
+                f"字數太少，最少需要 {validation_rules['word_count_min']} 字",
+                {"word_count": word_count}
+            )
+        
+        if word_count > validation_rules["word_count_max"]:
+            raise ValidationError(
+                f"字數太多，最多允許 {validation_rules['word_count_max']} 字",
+                {"word_count": word_count}
+            )
+        
+        return word_count
+    
+    def validate_style(self, exam_type: str, style: Optional[str]) -> bool:
+        """驗證寫作風格是否有效"""
+        if style is None:
+            return True
+        
+        self.validate_exam_type(exam_type)
+        
+        config = self.exam_configs["exam_types"][exam_type]
+        supported_styles = config["writing_styles"]
+        
+        if style not in supported_styles:
+            raise ValidationError(
+                f"{exam_type} 不支援的寫作風格: {style}",
+                {
+                    "exam_type": exam_type,
+                    "provided_style": style,
+                    "supported_styles": supported_styles
+                }
+            )
+        
+        return True
+    
+    def get_exam_info(self, exam_type: str) -> Dict[str, Any]:
+        """獲取考試類型的詳細資訊"""
+        self.validate_exam_type(exam_type)
+        return self.exam_configs["exam_types"][exam_type]
+    
+    def get_supported_exam_types(self) -> List[str]:
+        """獲取所有支援的考試類型"""
+        return list(self.exam_configs["exam_types"].keys())
+    
+    def get_default_word_count(self, exam_type: str, difficulty: str) -> int:
+        """獲取預設字數"""
+        self.validate_exam_type(exam_type)
+        self.validate_difficulty(exam_type, difficulty)
+        
+        config = self.exam_configs["exam_types"][exam_type]
+        return config["default_word_count"][difficulty]
+
+
+# 全域驗證器實例
+validator = ExamConfigValidator()
+</file>
+
+<file path="configs/exam_configs.json">
+{
+  "exam_types": {
+    "TOEIC": {
+      "name": "TOEIC",
+      "full_name": "Test of English for International Communication",
+      "description": "國際英語溝通測驗",
+      "supported_difficulties": ["初級", "中級", "中高級", "高級"],
+      "default_word_count": {
+        "初級": 150,
+        "中級": 200,
+        "中高級": 250,
+        "高級": 300
+      },
+      "common_topics": [
+        "商業會議",
+        "工作面試",
+        "產品介紹",
+        "客戶服務",
+        "團隊合作",
+        "時間管理",
+        "職場溝通",
+        "商業旅行",
+        "市場分析",
+        "公司政策"
+      ],
+      "writing_styles": [
+        "正式商業",
+        "非正式友善",
+        "說明文",
+        "議論文",
+        "敘述文"
+      ],
+      "validation_rules": {
+        "topic_min_length": 2,
+        "topic_max_length": 100,
+        "word_count_min": 50,
+        "word_count_max": 500
+      }
+    },
+    "IELTS": {
+      "name": "IELTS",
+      "full_name": "International English Language Testing System",
+      "description": "國際英語語言測試系統",
+      "supported_difficulties": ["Band 5", "Band 6", "Band 7", "Band 8", "Band 9"],
+      "default_word_count": {
+        "Band 5": 200,
+        "Band 6": 250,
+        "Band 7": 300,
+        "Band 8": 350,
+        "Band 9": 400
+      },
+      "common_topics": [
+        "教育制度",
+        "環境保護",
+        "科技發展",
+        "社會問題",
+        "文化差異",
+        "健康生活",
+        "城市發展",
+        "工作與生活平衡",
+        "全球化影響",
+        "媒體與社會"
+      ],
+      "writing_styles": [
+        "學術寫作",
+        "議論文",
+        "報告文",
+        "圖表描述",
+        "問題解決"
+      ],
+      "validation_rules": {
+        "topic_min_length": 2,
+        "topic_max_length": 100,
+        "word_count_min": 150,
+        "word_count_max": 500
+      }
+    },
+    "TOEFL": {
+      "name": "TOEFL",
+      "full_name": "Test of English as a Foreign Language",
+      "description": "托福考試",
+      "supported_difficulties": ["初級", "中級", "中高級", "高級"],
+      "default_word_count": {
+        "初級": 250,
+        "中級": 300,
+        "中高級": 350,
+        "高級": 400
+      },
+      "common_topics": [
+        "大學生活",
+        "學術研究",
+        "校園活動",
+        "學習方法",
+        "國際交流",
+        "課程選擇",
+        "畢業規劃",
+        "學術討論",
+        "圖書館使用",
+        "學生服務"
+      ],
+      "writing_styles": [
+        "學術寫作",
+        "個人觀點",
+        "比較分析",
+        "問題解決",
+        "經驗分享"
+      ],
+      "validation_rules": {
+        "topic_min_length": 2,
+        "topic_max_length": 100,
+        "word_count_min": 200,
+        "word_count_max": 500
+      }
+    }
+  }
+}
+</file>
+
+<file path="templates/prompt_templates.py">
+"""Prompt 模板定義"""
+
+from typing import Dict, List, Optional
+
+
+class PromptTemplates:
+    """提示模板類，包含各種考試類型的模板"""
+    
+    @staticmethod
+    def get_toeic_template(
+        topic: str,
+        difficulty: str,
+        word_count: int,
+        style: Optional[str] = None,
+        focus_points: Optional[List[str]] = None
+    ) -> Dict[str, str]:
+        """獲取 TOEIC 考試的提示模板"""
+        
+        system_message = f"""你是一個專業的 TOEIC 考試文章生成助手。請根據要求生成高質量的商務英語文章。
+
+TOEIC 考試特點：
+- 注重商務和職場情境
+- 語言實用且專業
+- 句法結構清晰
+- 詞彙選擇貼近商務環境
+- 內容積極正面
+
+文章要求：
+- 難度等級：{difficulty}
+- 目標字數：約 {word_count} 字
+- 語言自然流暢，符合商務溝通標準
+- 結構完整，邏輯清晰"""
+
+        if style:
+            system_message += f"\n- 寫作風格：{style}"
+        
+        user_prompt = f"請生成一篇關於「{topic}」的 TOEIC 考試文章。"
+        
+        if focus_points:
+            points_text = "、".join(focus_points)
+            user_prompt += f"\n\n請特別關注以下要點：{points_text}"
+        
+        user_prompt += "\n\n請直接輸出文章內容，不需要標題或額外說明。"
+        
+        return {
+            "system_message": system_message,
+            "user_prompt": user_prompt
+        }
+    
+    @staticmethod
+    def get_ielts_template(
+        topic: str,
+        difficulty: str,
+        word_count: int,
+        style: Optional[str] = None,
+        focus_points: Optional[List[str]] = None
+    ) -> Dict[str, str]:
+        """獲取 IELTS 考試的提示模板"""
+        
+        system_message = f"""你是一個專業的 IELTS 考試文章生成助手。請根據要求生成高質量的學術英語文章。
+
+IELTS 考試特點：
+- 學術性和正式性
+- 論證結構清晰
+- 詞彙豐富多樣
+- 句式變化豐富
+- 觀點表達明確
+
+文章要求：
+- 難度等級：{difficulty}
+- 目標字數：約 {word_count} 字
+- 語言正式學術，符合 IELTS 標準
+- 論證邏輯清晰，結構完整"""
+
+        if style:
+            system_message += f"\n- 寫作風格：{style}"
+        
+        user_prompt = f"請生成一篇關於「{topic}」的 IELTS 考試文章。"
+        
+        if focus_points:
+            points_text = "、".join(focus_points)
+            user_prompt += f"\n\n請特別關注以下要點：{points_text}"
+        
+        user_prompt += "\n\n請直接輸出文章內容，不需要標題或額外說明。"
+        
+        return {
+            "system_message": system_message,
+            "user_prompt": user_prompt
+        }
+    
+    @staticmethod
+    def get_toefl_template(
+        topic: str,
+        difficulty: str,
+        word_count: int,
+        style: Optional[str] = None,
+        focus_points: Optional[List[str]] = None
+    ) -> Dict[str, str]:
+        """獲取 TOEFL 考試的提示模板"""
+        
+        system_message = f"""你是一個專業的 TOEFL 考試文章生成助手。請根據要求生成高質量的學術英語文章。
+
+TOEFL 考試特點：
+- 學術環境導向
+- 個人觀點表達
+- 邏輯推理清晰
+- 例證支撐充分
+- 語言準確流暢
+
+文章要求：
+- 難度等級：{difficulty}
+- 目標字數：約 {word_count} 字
+- 語言學術且自然，符合 TOEFL 標準
+- 觀點明確，論證有力"""
+
+        if style:
+            system_message += f"\n- 寫作風格：{style}"
+        
+        user_prompt = f"請生成一篇關於「{topic}」的 TOEFL 考試文章。"
+        
+        if focus_points:
+            points_text = "、".join(focus_points)
+            user_prompt += f"\n\n請特別關注以下要點：{points_text}"
+        
+        user_prompt += "\n\n請直接輸出文章內容，不需要標題或額外說明。"
+        
+        return {
+            "system_message": system_message,
+            "user_prompt": user_prompt
+        }
+    
+    @staticmethod
+    def get_template_by_exam_type(
+        exam_type: str,
+        topic: str,
+        difficulty: str,
+        word_count: int,
+        style: Optional[str] = None,
+        focus_points: Optional[List[str]] = None
+    ) -> Dict[str, str]:
+        """根據考試類型獲取對應的模板"""
+        
+        template_map = {
+            "TOEIC": PromptTemplates.get_toeic_template,
+            "IELTS": PromptTemplates.get_ielts_template,
+            "TOEFL": PromptTemplates.get_toefl_template
+        }
+        
+        if exam_type not in template_map:
+            raise ValueError(f"不支援的考試類型: {exam_type}")
+        
+        return template_map[exam_type](
+            topic=topic,
+            difficulty=difficulty,
+            word_count=word_count,
+            style=style,
+            focus_points=focus_points
+        )
+</file>
+
+<file path=".claude/CLAUDE.md">
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is a Python-based article generator project using `uv` for dependency management. The project is in early development with a basic structure consisting of a main entry point and minimal dependencies.
+
+## Development Commands
+
+- **Run the application**: `python main.py`
+- **Install dependencies**: `uv install` (uses uv.lock for consistent installs)
+- **Add new dependencies**: `uv add <package-name>`
+- **Python version**: Requires Python >= 3.13.5
+
+## Project Structure
+
+- `main.py` - Entry point with basic "Hello World" functionality
+- `pyproject.toml` - Project configuration and dependencies
+- `uv.lock` - Locked dependency versions for reproducible builds
+
+## Dependencies
+
+- `python-dotenv` - For environment variable management
+
+## Development Notes
+
+- This project uses `uv` as the package manager instead of pip
+- The codebase is minimal and appears to be a starting template for an article generation tool
+- No testing framework is currently configured
+</file>
+
+<file path=".claude/task.md">
+# 多考試類型文章生成器 - 任務規劃文檔
+
+## 項目概述
+
+### 目標
+基於 FastAPI 和多 LLM 提供商（OpenAI GPT、Google Gemini）開發一個支援 TOEIC、GRE、IELTS、SAT 等多種考試標準的閱讀文章自動生成系統。
+
+### 核心功能
+- 支援四種考試類型的文章生成
+- 多 LLM 提供商支援（OpenAI、Gemini）
+- 動態 Prompt 模板系統
+- 參數化文章生成（主題、難度、字數、段落數）
+- 完整的 API 介面和錯誤處理
+
+## 項目結構設計
+
+```
+articleGenerator/
+├── main.py                     # FastAPI 應用入口
+├── app/
+│   ├── __init__.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── routes/
+│   │       ├── __init__.py
+│   │       └── generate.py     # POST /generate API 端點
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py          # 配置管理和環境變數
+│   │   └── exceptions.py      # 自定義異常類
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── request.py         # Pydantic 請求模型
+│   │   └── response.py        # Pydantic 回應模型
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── llm_service.py     # LLM 統一調用服務
+│   │   ├── template_service.py # 動態模板管理服務
+│   │   └── article_generator.py # 核心文章生成邏輯
+│   └── utils/
+│       ├── __init__.py
+│       └── validators.py      # 參數驗證工具
+├── configs/
+│   └── exam_configs.json     # 考試配置文件
+├── templates/
+│   └── prompt_templates.py   # Prompt 模板定義
+├── tests/
+│   ├── __init__.py
+│   ├── test_api.py           # API 測試
+│   ├── test_services.py      # 服務層測試
+│   └── test_validators.py    # 驗證器測試
+├── requirements.txt
+├── Dockerfile
+├── .env.example
+└── README.md
+```
+
+## 開發階段規劃
+
+### Phase 1: 基礎架構 (Week 1-2)
+
+#### 任務 1.1: 項目初始化
+**目標**: 建立項目基礎結構和開發環境
+
+**具體步驟**:
+1. 初始化 Python 項目結構
+2. 配置 pyproject.toml
+3. 建立基本資料夾結構
+4. 設定環境變數範本 (.env.example)
+
+**輸出物**:
+- 完整的專案資料夾結構
+- pyproject.toml 包含所需套件
+- .env.example 環境變數範本
+
+**驗收標準**:
+- 項目結構符合設計規範
+- 可成功安裝所有相依套件
+- 環境變數範本包含所有必要配置
+
+#### 任務 1.2: FastAPI 基礎設定
+**目標**: 搭建 FastAPI 應用基礎架構
+
+**具體步驟**:
+1. 建立 main.py FastAPI 應用入口
+2. 設定基本中間件 (CORS, 日誌等)
+3. 建立健康檢查端點 (/health)
+4. 配置 Pydantic 設定和環境變數管理
+5. 建立基本的異常處理器
+
+**輸出物**:
+- main.py 應用入口
+- app/core/config.py 配置管理
+- app/core/exceptions.py 異常定義
+- 基本 API 架構
+
+**驗收標準**:
+- FastAPI 應用可成功啟動
+- 健康檢查端點正常回應
+- 環境變數正確載入
+- 基本錯誤處理機制運作
+
+#### 任務 1.3: OpenAI API 整合
+**目標**: 整合 OpenAI API 服務
+
+**具體步驟**:
+1. 建立 LLM 服務基礎類別
+2. 實作 OpenAI API 調用邏輯
+3. 實作 token 使用統計
+4. 建立連接測試和錯誤處理
+5. 配置 API 金鑰管理
+
+**輸出物**:
+- app/services/llm_service.py LLM 服務類別
+- OpenAI API 整合邏輯
+- Token 使用統計功能
+
+**驗收標準**:
+- 可成功調用 OpenAI API
+- Token 使用統計準確
+- API 錯誤處理完善
+- API 金鑰安全管理
+
+#### 任務 1.4: TOEIC 考試類型實作
+**目標**: 完成 TOEIC 考試類型的完整功能
+
+**具體步驟**:
+1. 建立 TOEIC 考試配置
+2. 設計 TOEIC prompt 模板
+3. 實作參數驗證邏輯
+4. 建立文章生成核心邏輯
+5. 實作主題和難度分數驗證
+
+**輸出物**:
+- configs/exam_configs.json TOEIC 配置
+- templates/prompt_templates.py TOEIC 模板
+- app/utils/validators.py 驗證器
+- app/services/article_generator.py 生成器
+
+**驗收標準**:
+- TOEIC 所有主題都能正確生成文章
+- 難度分數驗證正確 (10-990)
+- 生成文章符合字數和段落要求
+- Business English 語調和內容適當
+
+#### 任務 1.5: API 端點實作
+**目標**: 實作 POST /generate API 端點
+
+**具體步驟**:
+1. 建立請求和回應的 Pydantic 模型
+2. 實作 /generate 端點邏輯
+3. 整合參數驗證和文章生成
+4. 實作回應格式和錯誤處理
+5. 添加 API 文檔註解
+
+**輸出物**:
+- app/models/request.py 請求模型
+- app/models/response.py 回應模型
+- app/api/routes/generate.py API 端點
+- 完整的 API 文檔
+
+**驗收標準**:
+- API 端點正確處理所有參數
+- 回應格式符合 PRD 規範
+- 錯誤處理完善且有意義的錯誤訊息
+- Swagger 文檔自動生成且完整
+
+### Phase 2: 多考試支援 (Week 3-4)
+
+#### 任務 2.1: GRE、IELTS、SAT 考試類型擴展
+**目標**: 擴展支援其他三種考試類型
+
+**具體步驟**:
+1. 擴展考試配置文件
+2. 為每種考試設計專用 prompt 模板
+3. 實作各考試的特殊驗證邏輯
+4. 測試各考試類型的文章生成
+5. 優化各考試的內容品質
+
+**輸出物**:
+- 完整的四種考試配置
+- 每種考試的專用模板
+- 考試特定的驗證器
+
+**驗收標準**:
+- 四種考試類型都能正確生成文章
+- 每種考試的難度分數範圍正確
+- 生成內容符合各考試的特色和要求
+- 學術語調和專業度適當
+
+#### 任務 2.2: 動態模板系統
+**目標**: 建立靈活的動態 prompt 模板系統
+
+**具體步驟**:
+1. 設計模板引擎架構
+2. 實作變數替換和條件邏輯
+3. 建立模板驗證和錯誤處理
+4. 建立模板測試工具
+
+**輸出物**:
+- app/services/template_service.py 模板服務
+- 動態模板引擎
+
+**驗收標準**:
+- 模板變數正確替換
+- 條件邏輯正確執行
+- 模板錯誤有清楚的錯誤訊息
+- 模板載入效能良好
+
+#### 任務 2.3: Gemini API 整合
+**目標**: 透過 OpenAI SDK 整合 Google Gemini API
+
+**具體步驟**:
+1. 研究 Gemini API 透過 OpenAI SDK 的調用方式
+2. 擴展 LLM 服務以支援多提供商
+3. 實作提供商切換邏輯
+4. 建立 Gemini 特定的錯誤處理
+5. 測試兩個提供商的一致性
+
+**輸出物**:
+- 多提供商支援的 LLM 服務
+- Gemini API 整合邏輯
+- 提供商切換機制
+
+**驗收標準**:
+- 可成功調用 Gemini API
+- 兩個提供商的回應格式一致
+- 提供商切換功能正常
+- Gemini 特定錯誤處理完善
+
+### Phase 3: 品質與效能 (Week 5-6)
+
+#### 任務 3.1: 完善錯誤處理機制
+**目標**: 建立完整的錯誤處理和回應系統
+
+**具體步驟**:
+1. 定義所有錯誤代碼和訊息
+2. 建立錯誤日誌
+3. 建立錯誤回復機制
+
+**輸出物**:
+- 完整的異常類別定義
+- 錯誤處理中間件
+- 錯誤日誌系統
+
+**驗收標準**:
+- 所有錯誤都有明確的錯誤代碼
+- 錯誤訊息對用戶友善且有幫助
+- 錯誤日誌完整且可追蹤
+ 
+#### 任務 3.2: 測試框架建立
+**目標**: 建立完整的單元測試
+
+**具體步驟**:
+1. 設定 pytest 測試框架
+2. 建立單元測試 (覆蓋率 > 85%)
+3. 建立 API 整合測試
+4. 建立 LLM 服務的模擬測試
+5. 設定持續整合測試
+
+**輸出物**:
+- 完整的測試套件
+- 測試覆蓋率報告
+
+**驗收標準**:
+- 單元測試覆蓋率達到 85% 以上
+- 測試結果清楚且可重現
+
+#### 任務 3.3: 效能優化
+**目標**: 優化系統效能和資源使用
+
+**具體步驟**:
+1. 優化 LLM API 調用效能
+2. 實作併發請求處理
+
+**輸出物**:
+- 併發處理機制
+
+**驗收標準**:
+- 支援 100 個併發請求
+- 記憶體使用穩定
+
+#### 任務 3.4: 日誌系統
+**目標**: 建立完整的日誌
+
+**具體步驟**:
+1. 實作結構化日誌系統
+2. 實作健康檢查端點
+
+**輸出物**:
+- 日誌系統
+- 健康檢查機制
+
+**驗收標準**:
+- 日誌格式統一且易於分析
+
+#### 任務 3.5: 容器化部署
+**目標**: 完成 Docker 容器化部署配置
+
+**具體步驟**:
+1. 建立 Dockerfile
+2. 優化鏡像大小和啟動時間
+3. 設定環境變數管理
+4. 建立部署文檔
+
+**輸出物**:
+- Dockerfile
+- 部署文檔
+
+**驗收標準**:
+- Docker 鏡像可成功建立和執行
+- 容器啟動時間 < 30 秒
+- 環境變數正確傳遞
+- 部署文檔清楚易懂
+
+## 時程安排
+
+| 階段    | 週數     | 主要里程碑                    |
+| ------- | -------- | ----------------------------- |
+| Phase 1 | Week 1-2 | 基礎架構完成，TOEIC 功能上線  |
+| Phase 2 | Week 3-4 | 四種考試全支援，多 LLM 提供商 |
+| Phase 3 | Week 5-6 | 品質保證，上線準備完成        |
+
+## 風險評估與應對策略
+
+### 高風險項目
+1. **LLM API 穩定性**
+   - 風險：API 服務中斷或限流
+   - 應對：實作重試機制和多提供商備援
+
+2. **文章品質一致性**
+   - 風險：不同模型生成品質差異
+   - 應對：建立品質評估機制和模板優化
+
+3. **效能瓶頸**
+   - 風險：併發請求處理能力不足
+   - 應對：實作快取和非同步處理
+
+### 中風險項目
+1. **Gemini API 整合複雜度**
+   - 風險：透過 OpenAI SDK 調用可能有限制
+   - 應對：提前驗證可行性，準備備選方案
+
+2. **測試覆蓋率達標**
+   - 風險：複雜邏輯測試困難
+   - 應對：分階段測試，使用模擬和假資料
+
+## 成功指標
+
+### 功能指標
+- 支援 4 種考試類型，每種至少 6 個主題
+- API 回應時間 < 10 秒
+- 系統可用性 > 99%
+- 測試覆蓋率 > 85%
+
+### 品質指標
+- 生成文章符合考試標準
+- 錯誤處理完善，無未捕捉異常
+- 文檔完整且易於理解
+- 代碼符合最佳實踐
+
+這個任務規劃文檔將作為開發過程中的指導方針，確保項目按時高品質交付。
+</file>
+
+<file path=".gitignore">
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.venv
+.env
+</file>
+
+<file path=".python-version">
+3.13.5
+</file>
+
+<file path="main.py">
+"""
+多考試類型文章生成器 FastAPI 應用程式入口點
+"""
+
+import logging
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.core.config import settings
+from app.core.exceptions import ArticleGeneratorException
+from app.api.routes.generate import router as generate_router
+
+
+# 配置日誌
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper()),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """應用程式生命週期管理"""
+    logger.info(f"啟動 {settings.app_name} v{settings.app_version}")
+    
+    # 啟動時的初始化邏輯
+    try:
+        # 驗證必要的配置
+        if not settings.openai_api_key or settings.openai_api_key == "your_openai_api_key_here":
+            logger.warning("OpenAI API 金鑰未正確設定，請檢查環境變數")
+        
+        logger.info("應用程式初始化完成")
+        yield
+        
+    except Exception as e:
+        logger.error(f"應用程式啟動失敗: {e}")
+        raise
+    finally:
+        # 關閉時的清理邏輯
+        logger.info("應用程式關閉")
+
+
+# 創建 FastAPI 應用程式實例
+app = FastAPI(
+    title=settings.app_name,
+    description="支援多種考試類型的文章生成器，包括 TOEIC、IELTS、托福等",
+    version=settings.app_version,
+    debug=settings.debug,
+    lifespan=lifespan
+)
+
+# 設定 CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 在生產環境中應該限制來源
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# 全域異常處理器
+@app.exception_handler(ArticleGeneratorException)
+async def article_generator_exception_handler(request, exc: ArticleGeneratorException):
+    """處理自定義異常"""
+    logger.error(f"應用程式異常: {exc.message}", extra={"details": exc.details})
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error": "應用程式錯誤",
+            "message": exc.message,
+            "details": exc.details
+        }
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc: HTTPException):
+    """處理 HTTP 異常"""
+    logger.error(f"HTTP 異常: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": "HTTP 錯誤",
+            "message": exc.detail
+        }
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc: Exception):
+    """處理一般異常"""
+    logger.error(f"未預期的錯誤: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "伺服器內部錯誤",
+            "message": "發生未預期的錯誤，請稍後再試"
+        }
+    )
+
+
+# 註冊路由
+app.include_router(generate_router, prefix="/api/v1", tags=["文章生成"])
+
+
+# 健康檢查端點
+@app.get("/", tags=["健康檢查"])
+async def root():
+    """根端點 - 健康檢查"""
+    return {
+        "message": f"歡迎使用 {settings.app_name}",
+        "version": settings.app_version,
+        "status": "正常運行"
+    }
+
+
+@app.get("/health", tags=["健康檢查"])
+async def health_check():
+    """健康檢查端點"""
+    return {
+        "status": "healthy",
+        "app_name": settings.app_name,
+        "version": settings.app_version
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    uvicorn.run(
+        "main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=settings.debug,
+        log_level=settings.log_level.lower()
+    )
+</file>
+
+<file path="pyproject.toml">
+[project]
+name = "articlegenerator"
+version = "0.1.0"
+description = "多考試類型文章生成器 - 支援 TOEIC、IELTS、托福等考試類型的文章生成"
+readme = "README.md"
+requires-python = ">=3.13.5"
+dependencies = [
+    "python-dotenv>=1.1.1",
+    "fastapi>=0.104.1",
+    "uvicorn[standard]>=0.24.0",
+    "openai>=1.3.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.7.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 88
+target-version = ['py313']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+</file>
+
+<file path=".claude/prd.md">
+# 多考試類型文章生成器 PRD (Product Requirements Document)
+
+## 產品概述
+基於多 LLM 提供商的多考試類型閱讀文章自動生成系統，支援 OpenAI GPT 和 Google Gemini 模型，並支援 TOEIC、GRE、IELTS、SAT 等多種考試標準，幫助用戶快速生成符合特定考試要求和主題的閱讀文章。
+
+## 技術架構
+- **後端框架**: FastAPI
+- **AI 服務**: 
+  - OpenAI GPT API (gpt-3.5-turbo, gpt-4, gpt-4-turbo)
+  - Google Gemini API (gemini-1.5-pro, gemini-1.5-flash, gemini-1.0-pro) - 透過 OpenAI SDK 統一調用
+- **統一介面**: OpenAI SDK 作為統一的 LLM 調用介面
+- **部署環境**: 支援容器化部署
+
+## API 規格
+
+### POST /generate
+生成指定考試類型的閱讀文章
+
+#### 請求參數
+```json
+{
+  "exam_type": "string",       // 考試類型: "TOEIC", "GRE", "IELTS", "SAT"
+  "topic": "string",           // 文章主題，根據考試類型選擇，見考試範圍定義
+  "word_count": "integer",     // 字數，範圍: 50-1500，預設: 150
+  "difficulty_score": "number", // 難度分數，依考試類型而異，見考試範圍定義
+  "paragraph_count": "integer", // 段落數，範圍: 1-10，預設: 3
+  "llm_provider": "string",    // LLM 提供商: "openai", "gemini"，預設: "openai"
+  "model": "string"            // 模型名稱，見支援模型列表，預設: "gpt-3.5-turbo"
+}
+```
+
+#### 支援的 LLM 模型
+```json
+[
+  {
+    "exam_name": "TOEIC",
+    "topics": [
+      "Business Correspondence",
+      "Meetings", 
+      "Telephone Ordering",
+      "Office Work",
+      "Travel",
+      "Daily Life"
+    ],
+    "score_range": {
+      "min": 10,
+      "max": 990,
+      "step": 5
+    }
+  },
+  {
+    "exam_name": "GRE", 
+    "topics": [
+      "Philosophy",
+      "Psychology",
+      "Social Sciences", 
+      "Natural Sciences",
+      "History",
+      "Literature",
+      "Politics",
+      "Art"
+    ],
+    "score_range": {
+      "min": 130,
+      "max": 170,
+      "step": 1
+    }
+  },
+  {
+    "exam_name": "IELTS",
+    "topics": [
+      "Daily Life",
+      "Workplace", 
+      "Education and Learning",
+      "Social Issues",
+      "Environment and Technology",
+      "Culture and Arts",
+      "Health and Medicine"
+    ],
+    "score_range": {
+      "min": 0,
+      "max": 9,
+      "step": 0.5
+    }
+  },
+  {
+    "exam_name": "SAT",
+    "topics": [
+      "U.S. History",
+      "Social Studies",
+      "Literature Reading", 
+      "Science (Biology, Chemistry, Physics)",
+      "Math Vocabulary",
+      "Writing and Analysis"
+    ],
+    "score_range": {
+      "min": 400,
+      "max": 1600,
+      "step": 10
+    }
+  }
+]
+```
+
+#### 回應格式
+```json
+{
+  "success": true,
+  "data": {
+    "article": "string",         // 生成的文章內容
+    "word_count": "integer",     // 實際字數
+    "exam_type": "string",       // 考試類型
+    "topic": "string",           // 文章主題
+    "difficulty_score": "number", // 難度分數
+    "paragraphs": "integer",     // 段落數
+    "llm_provider": "string",    // 使用的 LLM 提供商
+    "model": "string",           // 使用的模型名稱
+    "generation_time": "number", // 生成時間（秒）
+    "token_usage": {             // Token 使用統計
+      "prompt_tokens": "integer",
+      "completion_tokens": "integer", 
+      "total_tokens": "integer"
+    },
+    "generated_at": "datetime"   // 生成時間
+  },
+  "message": "string"
+}
+```
+
+## 動態 Prompt 模板系統
+
+### 基礎模板
+```
+Generate a {{exam_type}} reading passage about {{topic}} of approximately {{word_count}} words, 
+targeted at a difficulty level equivalent to a {{exam_type}} score of {{difficulty_score}}.
+
+Structure the text into {{paragraph_count}} clear paragraphs with content appropriate for {{exam_type}} test format.
+
+{{exam_specific_instructions}}
+
+The article should include:
+{{exam_specific_requirements}}
+```
+
+### 考試特定指令
+
+#### TOEIC 模板
+```
+exam_specific_instructions: "Use vocabulary and grammar patterns typical of TOEIC Part VII. Focus on realistic workplace and daily life scenarios. Avoid overly specialized technical terms and ensure the content is appropriate for business English learners."
+
+exam_specific_requirements:
+- Clear topic sentences for each paragraph
+- Practical business vocabulary appropriate for the topic
+- Realistic scenarios related to {{topic}}
+- Appropriate sentence complexity for the target TOEIC level
+- Professional tone suitable for workplace contexts
+```
+
+#### GRE 模板  
+```
+exam_specific_instructions: "Use sophisticated vocabulary and complex sentence structures typical of GRE reading comprehension. Present academic arguments with logical reasoning and evidence-based conclusions."
+
+exam_specific_requirements:
+- Academic vocabulary and terminology relevant to {{topic}}
+- Complex sentence structures with varied syntax
+- Logical argument development with supporting evidence
+- Analytical depth appropriate for graduate-level study
+- Formal academic tone and style
+```
+
+#### IELTS 模板
+```
+exam_specific_instructions: "Use clear, well-structured prose appropriate for IELTS Academic Reading. Balance accessibility with intellectual rigor, covering {{topic}} in a comprehensive yet approachable manner."
+
+exam_specific_requirements:
+- Clear main ideas with supporting details
+- Varied vocabulary relevant to {{topic}}
+- Logical paragraph structure with smooth transitions
+- Balanced presentation of different perspectives
+- International English style avoiding regional idioms
+```
+
+#### SAT 模板
+```
+exam_specific_instructions: "Create content suitable for SAT Reading passages, focusing on {{topic}} with attention to analytical reasoning and evidence-based thinking expected of college-bound students."
+
+exam_specific_requirements:
+- College-level vocabulary in context
+- Clear argumentative or informational structure
+- Evidence-based reasoning and examples
+- Appropriate complexity for high school students
+- Formal but accessible academic tone
+```
+
+## 多 LLM 提供商支援
+
+### LLM 統一介面設計
+系統採用 OpenAI SDK 作為統一的 LLM 調用介面，透過配置不同的 base_url 和 API 金鑰來支援多個 LLM 提供商。
+
+#### Gemini API 透過 OpenAI SDK 調用
+```json
+{
+  "success": false,
+  "error": {
+    "code": "string",
+    "message": "string",
+    "details": "object"
+  }
+}
+```
+
+### 錯誤代碼
+- `INVALID_EXAM_TYPE`: 不支援的考試類型
+- `INVALID_TOPIC`: 該考試類型不支援此主題
+- `INVALID_DIFFICULTY_SCORE`: 難度分數超出考試範圍
+- `INVALID_WORD_COUNT`: 字數超出範圍 (50-1500)
+- `INVALID_PARAGRAPH_COUNT`: 段落數超出範圍 (1-10)
+- `OPENAI_API_ERROR`: OpenAI API 呼叫失敗
+- `GENERATION_TIMEOUT`: 生成超時
+- `TEMPLATE_ERROR`: 模板處理錯誤
+
+## 考試配置管理
+
+### 配置文件結構
+```json
+{
+  "exam_configs": {
+    "TOEIC": {
+      "name": "Test of English for International Communication",
+      "description": "Business English proficiency test",
+      "topics": [...],
+      "score_range": {...},
+      "template_key": "toeic",
+      "max_word_count": 1500,
+      "recommended_paragraphs": 3
+    },
+    "GRE": {
+      "name": "Graduate Record Examinations", 
+      "description": "Graduate school admission test",
+      "topics": [...],
+      "score_range": {...},
+      "template_key": "gre",
+      "max_word_count": 1500,
+      "recommended_paragraphs": 4
+    }
+  }
+}
+```
+
+## 實作優先順序
+
+### Phase 1: 基礎架構 (Week 1-2)
+- FastAPI 基礎設定
+- OpenAI API 整合
+- 基本文章生成功能
+- TOEIC 考試類型實作
+
+### Phase 2: 多考試支援 (Week 3-4)
+- GRE、IELTS、SAT 考試類型
+- 動態模板系統
+- 考試配置管理 API
+- 參數驗證機制
+
+### Phase 3: 品質與效能 (Week 5-6)
+- 錯誤處理完善
+- 單元測試與整合測試
+- 效能優化
+- 監控與日誌系統
+
+## 測試需求
+
+### 單元測試
+- 各考試類型模板生成
+- 參數驗證邏輯
+- 錯誤處理機制
+- 覆蓋率 > 85%
+
+## 部署配置
+
+### 環境變數
+```bash
+# OpenAI
+OPENAI_API_KEY=…
+OPENAI_MODEL=gpt-3.5-turbo
+
+# Gemini
+GEMINI_API_KEY=…
+GEMINI_MODEL=gemini-1.5-pro
+
+# 通用
+LLM_PROVIDER=openai  # or "gemini"
+MAX_CONCURRENT_REQUESTS=100
+CACHE_TIMEOUT_MINUTES=60
+LOG_LEVEL=INFO
+```
+
+### Docker 配置
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+## 監控指標
+- API 回應時間
+- 成功率 / 錯誤率
+- OpenAI API 使用量
+- 各考試類型使用頻率
+- 資源使用狀況 (CPU, 記憶體)
+</file>
+
+</files>

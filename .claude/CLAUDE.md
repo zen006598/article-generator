@@ -8,7 +8,7 @@ This is a Python-based article generator project using `uv` for dependency manag
 
 ## Development Commands
 
-- **Run the application**: `python main.py`
+- **Run the application**: `uv run main.py`
 - **Install dependencies**: `uv install` (uses uv.lock for consistent installs)
 - **Add new dependencies**: `uv add <package-name>`
 - **Python version**: Requires Python >= 3.13.5
