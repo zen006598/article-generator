@@ -1,7 +1,7 @@
 [project]
-name = "articlegenerator"
+name = "article-generator"
 version = "0.1.0"
-description = "多考試類型文章生成器 - 支援 TOEIC、IELTS、托福等考試類型的文章生成"
+description = "多考試類型文章生成器 - 支援 TOEIC、IELTS考試類型的文章生成"
 readme = "README.md"
 requires-python = ">=3.13.5"
 dependencies = [
