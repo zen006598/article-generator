@@ -122,7 +122,7 @@ class LLMService:
             if settings.openai_api_key != "your_openai_api_key_here":
                 providers['openai'] = OpenAIProvider(
                     api_key=settings.openai_api_key,
-                    model=getattr(settings, 'openai_model', 'gpt-3.5-turbo')
+                    model=getattr(settings, 'openai_model', 'gpt-4o-mini-2024-07-18')
                 )
                 logger.info("OpenAI 提供商初始化成功")
         
@@ -131,7 +131,7 @@ class LLMService:
         if gemini_api_key and gemini_api_key != "your_gemini_api_key_here":
             providers['gemini'] = GeminiProvider(
                 api_key=gemini_api_key,
-                model=getattr(settings, 'gemini_model', 'gemini-1.5-pro')
+                model=getattr(settings, 'gemini_model', 'gemini-2.5-flash')
             )
             logger.info("Gemini 提供商初始化成功")
         

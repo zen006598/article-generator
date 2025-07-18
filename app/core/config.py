@@ -10,11 +10,11 @@ class Settings(BaseSettings):
     
     # OpenAI API 設定
     openai_api_key: str = Field(..., description="OpenAI API 金鑰")
-    openai_model: str = Field(default="gpt-3.5-turbo", description="使用的 OpenAI 模型")
+    openai_model: str = Field(default="gpt-4o-mini-2024-07-18", description="使用的 OpenAI 模型")
     
     # Gemini API 設定
     gemini_api_key: Optional[str] = Field(default=None, description="Gemini API 金鑰")
-    gemini_model: str = Field(default="gemini-1.5-pro", description="使用的 Gemini 模型")
+    gemini_model: str = Field(default="gemini-2.5-flesh", description="使用的 Gemini 模型")
     
     # LLM 提供商設定
     default_llm_provider: str = Field(default="openai", description="預設 LLM 提供商")
