@@ -111,7 +111,7 @@ class LLMService:
         """初始化 LLM 服務"""
         self.timeout = settings.generation_timeout
         self.providers = self._initialize_providers()
-        self.default_provider = getattr(settings, 'default_llm_provider', 'openai')
+        self.default_provider = settings.default_llm_provider
     
     def _initialize_providers(self) -> Dict[str, LLMProvider]:
         """初始化所有可用的 LLM 提供商"""
@@ -122,17 +122,17 @@ class LLMService:
             if settings.openai_api_key != "your_openai_api_key_here":
                 providers['openai'] = OpenAIProvider(
                     api_key=settings.openai_api_key,
-                    model=getattr(settings, 'openai_model', 'gpt-4o-mini-2024-07-18')
+                    model=settings.openai_model
                 )
                 logger.info("OpenAI 提供商初始化成功")
         
         # 初始化 Gemini
-        gemini_api_key = getattr(settings, 'gemini_api_key', None) or os.getenv('GEMINI_API_KEY')
-        if gemini_api_key and gemini_api_key != "your_gemini_api_key_here":
-            providers['gemini'] = GeminiProvider(
-                api_key=gemini_api_key,
-                model=getattr(settings, 'gemini_model', 'gemini-2.5-flash')
-            )
+        if hasattr(settings, 'gemini_api_key') and settings.gemini_api_key:
+            if settings.gemini_api_key != "your_gemini_api_key_here":
+                providers['gemini'] = GeminiProvider(
+                    api_key=settings.gemini_api_key,
+                    model=settings.gemini_model
+                )
             logger.info("Gemini 提供商初始化成功")
         
         if not providers:
