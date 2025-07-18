@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     default_language: str = Field(default="zh-TW", description="預設語言")
     generation_timeout: int = Field(default=30, description="生成超時時間（秒）")
     
+    # 效能設定
+    max_concurrent_requests: int = Field(default=50, description="最大併發請求數")
+    request_timeout: int = Field(default=15, description="請求超時時間（秒）")
+    max_retries: int = Field(default=3, description="最大重試次數")
+    retry_delay: float = Field(default=1.0, description="重試延遲時間（秒）")
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

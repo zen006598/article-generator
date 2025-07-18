@@ -4,12 +4,47 @@ import logging
 from typing import Dict, List, Optional, Any
 import asyncio
 import os
+import time
+from functools import wraps
 
 from openai import AsyncOpenAI
 from app.core.config import settings
-from app.core.exceptions import LLMServiceError, ConfigurationError
+from app.core.exceptions import (
+    LLMServiceError, 
+    ConfigurationError, 
+    OpenAIAPIError, 
+    GenerationTimeoutError
+)
 
 logger = logging.getLogger(__name__)
+
+
+def retry_async(max_retries: int = 3, delay: float = 1.0, backoff_factor: float = 2.0):
+    """異步重試裝飾器"""
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            last_exception = None
+            
+            for attempt in range(max_retries):
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    
+                    if attempt < max_retries - 1:
+                        wait_time = delay * (backoff_factor ** attempt)
+                        logger.warning(
+                            f"調用失敗 (嘗試 {attempt + 1}/{max_retries}): {str(e)}, "
+                            f"等待 {wait_time:.2f} 秒後重試"
+                        )
+                        await asyncio.sleep(wait_time)
+                    else:
+                        logger.error(f"所有重試都失敗了: {str(e)}")
+                        
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class LLMProvider:
@@ -32,6 +67,7 @@ class OpenAIProvider(LLMProvider):
         self.client = AsyncOpenAI(api_key=api_key)
         self.model = model
     
+    @retry_async(max_retries=3, delay=1.0)
     async def generate_completion(
         self,
         messages: List[Dict[str, str]],
@@ -40,6 +76,8 @@ class OpenAIProvider(LLMProvider):
     ) -> Dict[str, Any]:
         """使用 OpenAI API 生成文本"""
         try:
+            start_time = time.time()
+            
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -50,7 +88,9 @@ class OpenAIProvider(LLMProvider):
                 presence_penalty=0.0
             )
             
-            return {
+            end_time = time.time()
+            
+            result = {
                 "content": response.choices[0].message.content,
                 "usage": {
                     "prompt_tokens": response.usage.prompt_tokens,
@@ -58,10 +98,15 @@ class OpenAIProvider(LLMProvider):
                     "total_tokens": response.usage.total_tokens
                 },
                 "model": self.model,
-                "provider": "openai"
+                "provider": "openai",
+                "api_response_time": round(end_time - start_time, 3)
             }
+            
+            logger.info(f"OpenAI API 調用成功，耗時 {result['api_response_time']:.3f} 秒")
+            return result
+            
         except Exception as e:
-            raise LLMServiceError(f"OpenAI API 調用失敗: {str(e)}")
+            raise OpenAIAPIError(f"OpenAI API 調用失敗: {str(e)}", details={"error": str(e)})
 
 
 class GeminiProvider(LLMProvider):
@@ -75,6 +120,7 @@ class GeminiProvider(LLMProvider):
         )
         self.model = model
     
+    @retry_async(max_retries=3, delay=1.0)
     async def generate_completion(
         self,
         messages: List[Dict[str, str]],
@@ -83,6 +129,8 @@ class GeminiProvider(LLMProvider):
     ) -> Dict[str, Any]:
         """使用 Gemini API（透過 OpenAI SDK）生成文本"""
         try:
+            start_time = time.time()
+            
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -90,7 +138,9 @@ class GeminiProvider(LLMProvider):
                 temperature=temperature
             )
             
-            return {
+            end_time = time.time()
+            
+            result = {
                 "content": response.choices[0].message.content,
                 "usage": {
                     "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
@@ -98,10 +148,15 @@ class GeminiProvider(LLMProvider):
                     "total_tokens": response.usage.total_tokens if response.usage else 0
                 },
                 "model": self.model,
-                "provider": "gemini"
+                "provider": "gemini",
+                "api_response_time": round(end_time - start_time, 3)
             }
+            
+            logger.info(f"Gemini API 調用成功，耗時 {result['api_response_time']:.3f} 秒")
+            return result
+            
         except Exception as e:
-            raise LLMServiceError(f"Gemini API 調用失敗: {str(e)}")
+            raise LLMServiceError(f"Gemini API 調用失敗: {str(e)}", details={"error": str(e), "provider": "gemini"})
 
 
 class LLMService:
@@ -187,7 +242,7 @@ class LLMService:
             return response
             
         except asyncio.TimeoutError:
-            raise LLMServiceError(f"請求超時（{self.timeout}秒）")
+            raise GenerationTimeoutError(self.timeout)
         except Exception as e:
             logger.error(f"LLM API 調用失敗: {str(e)}")
             raise
