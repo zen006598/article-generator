@@ -9,7 +9,7 @@ class ArticleGenerationRequest(BaseModel):
     
     exam_type: str = Field(
         ...,
-        description="考試類型（如：TOEIC、IELTS、TOEFL）",
+        description="考試類型（支援：TOEIC、GRE、IELTS、SAT）",
         example="TOEIC"
     )
     
@@ -18,21 +18,29 @@ class ArticleGenerationRequest(BaseModel):
         min_length=2,
         max_length=100,
         description="文章主題",
-        example="商業會議的重要性"
+        example="Business Meetings"
     )
     
     difficulty: str = Field(
         ...,
-        description="難度等級",
+        description="難度等級（依考試類型而異）",
         example="中級"
     )
     
     word_count: Optional[int] = Field(
         None,
         ge=50,
-        le=500,
+        le=600,
         description="目標字數（可選，會使用預設值）",
         example=200
+    )
+    
+    paragraph_count: Optional[int] = Field(
+        None,
+        ge=1,
+        le=10,
+        description="段落數（可選，預設為3）",
+        example=3
     )
     
     style: Optional[str] = Field(
@@ -44,13 +52,17 @@ class ArticleGenerationRequest(BaseModel):
     focus_points: Optional[List[str]] = Field(
         None,
         description="重點內容（可選）",
-        example=["團隊合作", "溝通技巧"]
+        example=["team collaboration", "communication skills"]
     )
     
     @validator("exam_type")
     def validate_exam_type(cls, v):
         """驗證考試類型格式"""
-        return v.upper().strip()
+        allowed_types = ["TOEIC", "GRE", "IELTS", "SAT"]
+        v_upper = v.upper().strip()
+        if v_upper not in allowed_types:
+            raise ValueError(f"考試類型必須是以下之一: {', '.join(allowed_types)}")
+        return v_upper
     
     @validator("topic")
     def validate_topic(cls, v):

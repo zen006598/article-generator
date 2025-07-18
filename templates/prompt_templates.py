@@ -46,6 +46,48 @@ TOEIC 考試特點：
             "system_message": system_message,
             "user_prompt": user_prompt
         }
+
+    @staticmethod
+    def get_gre_template(
+        topic: str,
+        difficulty: str,
+        word_count: int,
+        style: Optional[str] = None,
+        focus_points: Optional[List[str]] = None
+    ) -> Dict[str, str]:
+        """獲取 GRE 考試的提示模板"""
+        
+        system_message = f"""你是一個專業的 GRE 考試文章生成助手。請根據要求生成高質量的學術英語文章。
+
+GRE 考試特點：
+- 學術詞彙豐富複雜
+- 句式結構多變深刻
+- 邏輯論證嚴謹
+- 分析深度要求高
+- 適合研究生水準
+
+文章要求：
+- 難度等級：{difficulty}
+- 目標字數：約 {word_count} 字
+- 使用複雜的學術詞彙和句式結構
+- 呈現邏輯嚴謹的學術論證
+- 適合研究生入學考試標準"""
+
+        if style:
+            system_message += f"\n- 寫作風格：{style}"
+        
+        user_prompt = f"請生成一篇關於「{topic}」的 GRE 考試文章。"
+        
+        if focus_points:
+            points_text = "、".join(focus_points)
+            user_prompt += f"\n\n請特別關注以下要點：{points_text}"
+        
+        user_prompt += "\n\n請直接輸出文章內容，不需要標題或額外說明。"
+        
+        return {
+            "system_message": system_message,
+            "user_prompt": user_prompt
+        }
     
     @staticmethod
     def get_ielts_template(
@@ -89,34 +131,36 @@ IELTS 考試特點：
         }
     
     @staticmethod
-    def get_toefl_template(
+    def get_sat_template(
         topic: str,
         difficulty: str,
         word_count: int,
         style: Optional[str] = None,
         focus_points: Optional[List[str]] = None
     ) -> Dict[str, str]:
-        """獲取 TOEFL 考試的提示模板"""
+        """獲取 SAT 考試的提示模板"""
         
-        system_message = f"""你是一個專業的 TOEFL 考試文章生成助手。請根據要求生成高質量的學術英語文章。
+        system_message = f"""你是一個專業的 SAT 考試文章生成助手。請根據要求生成高質量的學術英語文章。
 
-TOEFL 考試特點：
-- 學術環境導向
-- 個人觀點表達
-- 邏輯推理清晰
-- 例證支撐充分
-- 語言準確流暢
+SAT 考試特點：
+- 大學預備水準
+- 分析推理能力
+- 證據支撐論點
+- 批判性思考
+- 正式學術語調
 
 文章要求：
 - 難度等級：{difficulty}
 - 目標字數：約 {word_count} 字
-- 語言學術且自然，符合 TOEFL 標準
-- 觀點明確，論證有力"""
+- 使用大學水準詞彙
+- 清晰的論證或資訊結構
+- 基於證據的推理和例證
+- 適合高中生的複雜度"""
 
         if style:
             system_message += f"\n- 寫作風格：{style}"
         
-        user_prompt = f"請生成一篇關於「{topic}」的 TOEFL 考試文章。"
+        user_prompt = f"請生成一篇關於「{topic}」的 SAT 考試文章。"
         
         if focus_points:
             points_text = "、".join(focus_points)
@@ -142,8 +186,9 @@ TOEFL 考試特點：
         
         template_map = {
             "TOEIC": PromptTemplates.get_toeic_template,
+            "GRE": PromptTemplates.get_gre_template,
             "IELTS": PromptTemplates.get_ielts_template,
-            "TOEFL": PromptTemplates.get_toefl_template
+            "SAT": PromptTemplates.get_sat_template
         }
         
         if exam_type not in template_map:

@@ -17,16 +17,12 @@
         "高級": 300
       },
       "common_topics": [
-        "商業會議",
-        "工作面試",
-        "產品介紹",
-        "客戶服務",
-        "團隊合作",
-        "時間管理",
-        "職場溝通",
-        "商業旅行",
-        "市場分析",
-        "公司政策"
+        "Business Correspondence",
+        "Meetings",
+        "Telephone Ordering",
+        "Office Work",
+        "Travel",
+        "Daily Life"
       ],
       "writing_styles": [
         "正式商業",
@@ -40,6 +36,58 @@
         "topic_max_length": 100,
         "word_count_min": 50,
         "word_count_max": 500
+      },
+      "score_range": {
+        "min": 10,
+        "max": 990,
+        "step": 5
+      }
+    },
+    "GRE": {
+      "name": "GRE",
+      "full_name": "Graduate Record Examinations",
+      "description": "研究生入學考試",
+      "supported_difficulties": [
+        "130分",
+        "140分",
+        "150分",
+        "160分",
+        "170分"
+      ],
+      "default_word_count": {
+        "130分": 300,
+        "140分": 350,
+        "150分": 400,
+        "160分": 450,
+        "170分": 500
+      },
+      "common_topics": [
+        "Philosophy",
+        "Psychology",
+        "Social Sciences",
+        "Natural Sciences",
+        "History",
+        "Literature",
+        "Politics",
+        "Art"
+      ],
+      "writing_styles": [
+        "學術分析",
+        "批判思考",
+        "論證評估",
+        "概念比較",
+        "理論探討"
+      ],
+      "validation_rules": {
+        "topic_min_length": 2,
+        "topic_max_length": 100,
+        "word_count_min": 250,
+        "word_count_max": 600
+      },
+      "score_range": {
+        "min": 130,
+        "max": 170,
+        "step": 1
       }
     },
     "IELTS": {
@@ -61,16 +109,13 @@
         "Band 9": 400
       },
       "common_topics": [
-        "教育制度",
-        "環境保護",
-        "科技發展",
-        "社會問題",
-        "文化差異",
-        "健康生活",
-        "城市發展",
-        "工作與生活平衡",
-        "全球化影響",
-        "媒體與社會"
+        "Daily Life",
+        "Workplace",
+        "Education and Learning",
+        "Social Issues",
+        "Environment and Technology",
+        "Culture and Arts",
+        "Health and Medicine"
       ],
       "writing_styles": [
         "學術寫作",
@@ -84,48 +129,60 @@
         "topic_max_length": 100,
         "word_count_min": 150,
         "word_count_max": 500
+      },
+      "score_range": {
+        "min": 0,
+        "max": 9,
+        "step": 0.5
       }
     },
-    "TOEFL": {
-      "name": "TOEFL",
-      "full_name": "Test of English as a Foreign Language",
-      "description": "托福考試",
+    "SAT": {
+      "name": "SAT",
+      "full_name": "Scholastic Assessment Test",
+      "description": "學術能力評估測試",
       "supported_difficulties": [
-        "初級",
-        "中級",
-        "中高級",
-        "高級"
+        "400分",
+        "600分",
+        "800分",
+        "1000分",
+        "1200分",
+        "1400分",
+        "1600分"
       ],
       "default_word_count": {
-        "初級": 250,
-        "中級": 300,
-        "中高級": 350,
-        "高級": 400
+        "400分": 200,
+        "600分": 250,
+        "800分": 300,
+        "1000分": 350,
+        "1200分": 400,
+        "1400分": 450,
+        "1600分": 500
       },
       "common_topics": [
-        "大學生活",
-        "學術研究",
-        "校園活動",
-        "學習方法",
-        "國際交流",
-        "課程選擇",
-        "畢業規劃",
-        "學術討論",
-        "圖書館使用",
-        "學生服務"
+        "U.S. History",
+        "Social Studies",
+        "Literature Reading",
+        "Science (Biology, Chemistry, Physics)",
+        "Math Vocabulary",
+        "Writing and Analysis"
       ],
       "writing_styles": [
-        "學術寫作",
-        "個人觀點",
-        "比較分析",
-        "問題解決",
-        "經驗分享"
+        "分析寫作",
+        "證據論述",
+        "批判閱讀",
+        "邏輯推理",
+        "學術討論"
       ],
       "validation_rules": {
         "topic_min_length": 2,
         "topic_max_length": 100,
         "word_count_min": 200,
-        "word_count_max": 500
+        "word_count_max": 600
+      },
+      "score_range": {
+        "min": 400,
+        "max": 1600,
+        "step": 10
       }
     }
   }
