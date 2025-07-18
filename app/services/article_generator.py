@@ -67,11 +67,6 @@ class ArticleGenerator:
                 "success": True,
                 "article": response["content"],
                 "metadata": metadata,
-                "generation_info": {
-                    "provider": response.get("provider", "unknown"),
-                    "model": response.get("model", "unknown"),
-                    "usage": response.get("usage", {})
-                },
                 "timestamp": datetime.now().isoformat()
             }
             
@@ -145,7 +140,10 @@ class ArticleGenerator:
             "target_word_count": word_count,
             "target_paragraph_count": paragraph_count,
             "actual_word_count": llm_response.get("actual_word_count", 0),
-            "generation_time": datetime.now().isoformat()
+            "generation_time": datetime.now().isoformat(),
+            "provider": llm_response.get("provider", "unknown"),
+            "model": llm_response.get("model", "unknown"),
+            "usage": llm_response.get("usage", {})
         }
         
         if style:
